@@ -1,5 +1,6 @@
 package com.example.helloworld;
 
+import com.example.helloworld.api.TensorConfiguration;
 import com.example.helloworld.auth.ExampleAuthenticator;
 import com.example.helloworld.auth.ExampleAuthorizer;
 import com.example.helloworld.cli.RenderCommand;
@@ -7,6 +8,7 @@ import com.example.helloworld.core.Person;
 import com.example.helloworld.core.Template;
 import com.example.helloworld.core.User;
 import com.example.helloworld.db.PersonDAO;
+import com.example.helloworld.db.TensorConfigurationDAO;
 import com.example.helloworld.filter.DateRequiredFeature;
 import com.example.helloworld.health.TemplateHealthCheck;
 import com.example.helloworld.resources.FilteredResource;
@@ -39,12 +41,13 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
     }
 
     private final HibernateBundle<HelloWorldConfiguration> hibernateBundle =
-        new HibernateBundle<HelloWorldConfiguration>(Person.class) {
-            @Override
-            public DataSourceFactory getDataSourceFactory(HelloWorldConfiguration configuration) {
-                return configuration.getDataSourceFactory();
-            }
-        };
+            new HibernateBundle<HelloWorldConfiguration>(Person.class,
+                    TensorConfiguration.class) {
+                @Override
+                public DataSourceFactory getDataSourceFactory(HelloWorldConfiguration configuration) {
+                    return configuration.getDataSourceFactory();
+                }
+            };
 
     @Override
     public String getName() {
@@ -81,6 +84,7 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
     @Override
     public void run(HelloWorldConfiguration configuration, Environment environment) {
         final PersonDAO dao = new PersonDAO(hibernateBundle.getSessionFactory());
+        final TensorConfigurationDAO tcDao = new TensorConfigurationDAO(hibernateBundle.getSessionFactory());
         final Template template = configuration.buildTemplate();
 
         environment.healthChecks().register("template", new TemplateHealthCheck(template));
@@ -93,7 +97,7 @@ public class HelloWorldApplication extends Application<HelloWorldConfiguration> 
                 .buildAuthFilter()));
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
         environment.jersey().register(RolesAllowedDynamicFeature.class);
-        environment.jersey().register(new HelloWorldResource());
+        environment.jersey().register(new HelloWorldResource(tcDao));
         environment.jersey().register(new ViewResource());
         environment.jersey().register(new ProtectedResource());
         environment.jersey().register(new PeopleResource(dao));

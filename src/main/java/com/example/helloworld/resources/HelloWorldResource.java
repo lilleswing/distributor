@@ -2,6 +2,8 @@ package com.example.helloworld.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.example.helloworld.api.TensorConfiguration;
+import com.example.helloworld.db.TensorConfigurationDAO;
+import io.dropwizard.hibernate.UnitOfWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,37 +24,43 @@ public class HelloWorldResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldResource.class);
 
     private final AtomicInteger counter;
+    private final TensorConfigurationDAO tcDao;
     private final List<TensorConfiguration> configurations;
 
-    public HelloWorldResource() {
+    public HelloWorldResource(TensorConfigurationDAO tcDao) {
         this.counter = new AtomicInteger();
+        this.tcDao = tcDao;
         configurations = createConfigurations();
     }
 
     @GET
     @Path("/new-work")
-    @Timed(name = "get-work")
+    @Timed(name = "new-work")
+    @UnitOfWork
     public TensorConfiguration getWork() {
         int index = counter.getAndIncrement();
         final TensorConfiguration tensorConfiguration = configurations.get(index);
         tensorConfiguration.setStatus("STARTED");
-        return tensorConfiguration;
+        return tcDao.create(tensorConfiguration);
     }
 
     @PUT
     @Path("/{id}")
+    @UnitOfWork
     public void updateResults(@PathParam("id") long id,
                               @Valid TensorConfiguration tensorConfiguration) {
         tensorConfiguration.setStatus("COMPLETE");
         LOGGER.error("Received a tensorConfiguration: {}", tensorConfiguration);
         configurations.set((int) id, tensorConfiguration);
+        tcDao.update(tensorConfiguration);
     }
 
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @UnitOfWork
     public List<TensorConfiguration> listConfigurations() {
-        return configurations;
+        return tcDao.findAll();
     }
 
     private List<TensorConfiguration> createConfigurations() {
@@ -67,9 +75,6 @@ public class HelloWorldResource {
                 tensorConfiguration.setProjectData(dataSet);
                 configurations.add(tensorConfiguration);
             }
-        }
-        for (int i = 0; i < configurations.size(); i++) {
-            configurations.get(i).setId(i);
         }
         return configurations;
     }

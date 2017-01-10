@@ -17,4 +17,18 @@
             <column name="jobTitle" type="varchar(255)"/>
         </createTable>
     </changeSet>
+
+    <changeSet id="2" author="codahale">
+        <createTable tableName="tensor_configuration">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="numAtoms" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="projectData" type="text"/>
+            <column name="results" type="text"/>
+            <column name="status" type="text"/>
+        </createTable>
+    </changeSet>
 </databaseChangeLog>

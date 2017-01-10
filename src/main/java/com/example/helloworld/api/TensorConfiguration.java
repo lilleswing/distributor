@@ -2,11 +2,40 @@ package com.example.helloworld.api;
 
 import com.google.common.base.MoreObjects;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "tensor_configuration")
+@NamedQueries(
+    {
+        @NamedQuery(
+            name = "com.example.helloworld.core.api.TensorConfiguration.findAll",
+            query = "SELECT c FROM TensorConfiguration c"
+        )
+    }
+)
 public class TensorConfiguration {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+
+    @Column(name = "numAtoms")
     private int numAtoms;
+
+    @Column(name = "projectData")
     private String projectData;
+
+    @Column(name = "results")
     private String results;
+
+    @Column(name = "status")
     private String status;
 
     public TensorConfiguration() {
