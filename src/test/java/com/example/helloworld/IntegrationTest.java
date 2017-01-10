@@ -57,16 +57,6 @@ public class IntegrationTest {
     }
 
     @Test
-    public void testHelloWorld() throws Exception {
-        final Optional<String> name = Optional.of("Dr. IntegrationTest");
-        final TensorConfiguration tensorConfiguration = client.target("http://localhost:" + RULE.getLocalPort() + "/hello-world")
-                .queryParam("name", name.get())
-                .request()
-                .get(TensorConfiguration.class);
-        assertThat(tensorConfiguration.getContent()).isEqualTo(RULE.getConfiguration().buildTemplate().render(name));
-    }
-
-    @Test
     public void testPostPerson() throws Exception {
         final Person person = new Person("Dr. IntegrationTest", "Chief Wizard");
         final Person newPerson = client.target("http://localhost:" + RULE.getLocalPort() + "/people")

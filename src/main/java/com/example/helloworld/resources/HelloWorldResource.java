@@ -2,59 +2,75 @@ package com.example.helloworld.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.example.helloworld.api.TensorConfiguration;
-import com.example.helloworld.core.Template;
-import io.dropwizard.jersey.caching.CacheControl;
-import io.dropwizard.jersey.params.DateTimeParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-@Path("/hello-world")
+@Path("/get-work")
 @Produces(MediaType.APPLICATION_JSON)
 public class HelloWorldResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldResource.class);
 
-    private final Template template;
-    private final AtomicLong counter;
+    private final AtomicInteger counter;
+    private final List<TensorConfiguration> configurations;
 
-    public HelloWorldResource(Template template) {
-        this.template = template;
-        this.counter = new AtomicLong();
+    public HelloWorldResource() {
+        this.counter = new AtomicInteger();
+        configurations = createConfigurations();
     }
 
     @GET
-    @Timed(name = "get-requests")
-    @CacheControl(maxAge = 1, maxAgeUnit = TimeUnit.DAYS)
-    public TensorConfiguration sayHello(@QueryParam("name") Optional<String> name) {
-        return new TensorConfiguration(counter.incrementAndGet(), template.render(name));
+    @Path("/new-work")
+    @Timed(name = "get-work")
+    public TensorConfiguration getWork() {
+        int index = counter.getAndIncrement();
+        final TensorConfiguration tensorConfiguration = configurations.get(index);
+        tensorConfiguration.setStatus("STARTED");
+        return tensorConfiguration;
     }
 
-    @POST
-    public void receiveHello(@Valid TensorConfiguration tensorConfiguration) {
-        LOGGER.info("Received a tensorConfiguration: {}", tensorConfiguration);
+    @PUT
+    @Path("/{id}")
+    public void updateResults(@PathParam("id") long id,
+                              @Valid TensorConfiguration tensorConfiguration) {
+        tensorConfiguration.setStatus("COMPLETE");
+        LOGGER.error("Received a tensorConfiguration: {}", tensorConfiguration);
+        configurations.set((int) id, tensorConfiguration);
     }
+
 
     @GET
-    @Path("/date")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String receiveDate(@QueryParam("date") Optional<DateTimeParam> dateTimeParam) {
-        if (dateTimeParam.isPresent()) {
-            final DateTimeParam actualDateTimeParam = dateTimeParam.get();
-            LOGGER.info("Received a date: {}", actualDateTimeParam);
-            return actualDateTimeParam.get().toString();
-        } else {
-            LOGGER.warn("No received date");
-            return null;
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<TensorConfiguration> listConfigurations() {
+        return configurations;
+    }
+
+    private List<TensorConfiguration> createConfigurations() {
+        final List<TensorConfiguration> configurations = new ArrayList<>();
+        final List<String> datasets = new ArrayList<>();
+        datasets.add("BORON");
+        datasets.add("GABLE");
+        for (int i = 20; i <= 60; i += 5) {
+            for (final String dataSet : datasets) {
+                final TensorConfiguration tensorConfiguration = new TensorConfiguration();
+                tensorConfiguration.setNumAtoms(i);
+                tensorConfiguration.setProjectData(dataSet);
+                configurations.add(tensorConfiguration);
+            }
         }
+        for (int i = 0; i < configurations.size(); i++) {
+            configurations.get(i).setId(i);
+        }
+        return configurations;
     }
 }
